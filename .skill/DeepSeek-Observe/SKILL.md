@@ -1,6 +1,8 @@
 ---
 name: deepseek-observe
 description: For DeepSeek-V4-flash and DeepSeek-V4-pro. Use DashScope vision parsing to turn images, screenshots, documents, charts, and UI captures into structured Markdown. Best for image reading first; when the image is a frontend screenshot, also extract layout, responsive, and accessibility clues for later text-only reasoning.
+
+适用于 DeepSeek-V4-flash 与 DeepSeek-V4-pro 模型，理论上可以为所有的纯文本模型提供视觉能力。调用多模态模型，将图片转换为结构化 Markdown 格式。该方案优先适配图像读取场景；若图片为前端页面截图，提供前端开发相关的布局、响应式、可访问性线索，供后续纯文本模型推理使用。
 ---
 
 # DeepSeek Observe
