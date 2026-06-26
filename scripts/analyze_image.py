@@ -3,7 +3,7 @@
 DeepSeek Observe
 
 调用阿里云百炼 DashScope 视觉模型，将图片转成结构化 Markdown。
-默认模型: qwen3.6-27B
+默认模型: qwen3.6-27b
 """
 
 import argparse
@@ -16,7 +16,7 @@ import requests
 
 SUPPORTED_FORMATS = (".jpg", ".jpeg", ".png", ".webp", ".bmp")
 DASHSCOPE_URL = "https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation"
-DEFAULT_MODEL = "qwen3.6-27B"
+DEFAULT_MODEL = "qwen3.6-27b"
 TIMEOUT_SECONDS = 60
 
 
@@ -145,7 +145,7 @@ def main():
         "--model",
         "-m",
         default=DEFAULT_MODEL,
-        choices=["qwen3.6-27B"],
+        choices=["qwen3.6-27b"],
         help=f"模型名称（默认: {DEFAULT_MODEL}）",
     )
     parser.add_argument(
