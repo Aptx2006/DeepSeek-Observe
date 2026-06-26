@@ -88,10 +88,10 @@ description: For DeepSeek-V4-flash and DeepSeek-V4-pro. Use DashScope vision par
 
 ## DashScope 调用
 
-默认使用阿里云百炼 DashScope，模型为 `qwen3.6-35b-a3b`。
+默认使用阿里云百炼 DashScope，模型为 `qwen3.6-27B`。
 
 ```bash
-python3 /mnt/d/CODE/Major/前端开发/.reasonix/skills/deepseek-observe/scripts/analyze_image.py \
+python3 skill开发/deepseek-observe/scripts/analyze_image.py \
   --image_path <图片文件路径>
 ```
 
