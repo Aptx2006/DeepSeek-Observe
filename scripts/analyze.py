@@ -20,6 +20,7 @@ SUPPORTED_FORMATS = (".jpg", ".jpeg", ".png", ".webp", ".bmp")
 DASHSCOPE_URL = "https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation"
 DEFAULT_MODEL = "qwen3.6-27b"
 TIMEOUT_SECONDS = 60
+CACHE_MAX_ENTRIES = 500
 CACHE_FILE = Path(__file__).with_name(".observe_cache.json")
 
 
@@ -56,10 +57,27 @@ def load_cache():
 
 def save_cache(cache):
     try:
+        if CACHE_MAX_ENTRIES > 0 and len(cache) > CACHE_MAX_ENTRIES:
+            keys = list(cache.keys())[-CACHE_MAX_ENTRIES:]
+            cache = {key: cache[key] for key in keys}
         with open(CACHE_FILE, "w", encoding="utf-8") as f:
             json.dump(cache, f, ensure_ascii=False, indent=2)
     except Exception:
         pass
+
+
+def format_usage_summary(model, usage, cache_hit=False):
+    if cache_hit:
+        return f"[INFO] 模型: {model} | token: 缓存命中，未重复调用"
+    if not usage:
+        return f"[INFO] 模型: {model} | token: 未返回用量信息"
+    return (
+        f"[INFO] 模型: {model} | "
+        f"图片={usage.get('image_tokens', '?')} "
+        f"输入={usage.get('input_tokens', '?')} "
+        f"输出={usage.get('output_tokens', '?')} "
+        f"总计={usage.get('total_tokens', '?')}"
+    )
 
 
 def build_prompt(mode: str) -> str:
@@ -97,6 +115,7 @@ def analyze_image(image_path, api_key, model=DEFAULT_MODEL, mode="general"):
     cached = cache.get(cache_key)
     if isinstance(cached, dict) and cached.get("markdown"):
         print("[INFO] 命中本地缓存，直接复用上次结果", file=sys.stderr)
+        print(format_usage_summary(model, None, cache_hit=True), file=sys.stderr)
         return cached["markdown"]
 
     with open(image_path, "rb") as f:
@@ -156,15 +175,7 @@ def analyze_image(image_path, api_key, model=DEFAULT_MODEL, mode="general"):
             if text:
                 print("[INFO] 解析成功", file=sys.stderr)
                 usage = result.get("usage", {})
-                if usage:
-                    print(
-                        "[INFO] Token消耗: "
-                        f"图片={usage.get('image_tokens', '?')} "
-                        f"输入={usage.get('input_tokens', '?')} "
-                        f"输出={usage.get('output_tokens', '?')} "
-                        f"总计={usage.get('total_tokens', '?')}",
-                        file=sys.stderr,
-                    )
+                print(format_usage_summary(model, usage), file=sys.stderr)
                 cache[cache_key] = {
                     "markdown": text,
                     "image_path": image_path,

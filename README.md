@@ -41,11 +41,30 @@ python3 scripts/analyze.py --image_path ./demo/screenshot.png --mode frontend-ch
 ```
 
 输出会直接返回 Markdown，便于继续喂给纯文本模型。
+调用结束后，终端会在错误输出里显示本次使用的模型和 token 消耗。
+
+## 更换模型
+
+如果你还是用阿里云百炼平台，直接把 `--model` 后面的模型名换掉就行。
+例如：
+
+```bash
+python3 scripts/analyze.py --image_path ./demo/screenshot.png --model qwen3.1-vl-max
+```
+
+前提是这个模型名在你当前账号和平台里可用。
+
+## 为什么默认用 `qwen3.6-27b`
+
+- 阿里云百炼新用户通常会有免费 token，可先用它做低成本试跑
+- 这是 Dense 模型，视觉理解能力和综合表现比较稳，适合作为默认值
+- 成本、效果和可用性之间比较均衡，适合大多数图片解析场景
 
 ## 缓存
 
 脚本会在本地保存一份结果缓存。只要图片内容、模式和模型没变，第二次运行会直接复用上次的 Markdown。
 缓存文件位于 `scripts/.observe_cache.json`。
+默认最多保留 500 条缓存，超过后会自动裁掉旧记录；把 `CACHE_MAX_ENTRIES` 设为 `0` 就是无限制。
 
 ## 参数说明
 
