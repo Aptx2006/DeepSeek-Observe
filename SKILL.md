@@ -1,15 +1,13 @@
 ---
 name: deepseek-observe
-description: For DeepSeek-V4-flash and DeepSeek-V4-pro. Use DashScope vision parsing to turn images, screenshots, documents, charts, and UI captures into structured Markdown. Best for image reading first; when the image is a frontend screenshot, also extract layout, responsive, and accessibility clues for later text-only reasoning.
-
-适用于 DeepSeek-V4-flash 与 DeepSeek-V4-pro 模型，理论上可以为所有的纯文本模型提供视觉能力。调用多模态模型，将图片转换为结构化 Markdown 格式。该方案优先适配图像读取场景；若图片为前端页面截图，提供前端开发相关的布局、响应式、可访问性线索，供后续纯文本模型推理使用。
+description: 为纯文本模型提供视觉能力、多模态能力。用 DashScope 把图片、截图、文档和图表转成结构化 Markdown；如果遇到前端截图还会补充布局、适配和可访问性线索，方便文本模型进行前端开发。
 ---
 
 # DeepSeek Observe
 
 ## 一句话定义
 
-把图片先转成结构化文本，再交给 DeepSeek-V4-flash / DeepSeek-V4-pro 推理；前端截图时额外抽取布局证据。
+把图片先转成结构化文本，再交给 DeepSeek-V4-flash / DeepSeek-V4-pro 推理；前端截图时额外抽取布局证据，助力纯文本模型进行前端开发。
 
 ## 适用场景
 
@@ -81,6 +79,16 @@ description: For DeepSeek-V4-flash and DeepSeek-V4-pro. Use DashScope vision par
 - 响应式风险
 - 可访问性风险
 
+## 前端检查模式
+
+当以 `frontend-check` 运行时，除基础观察外，还要额外检查：
+
+- 重复文字：同一页面是否出现两次相同的标题、名称或核心文案
+- 视觉不均衡：是否存在明显的内边距 / 外边距比例失衡
+- 潜在裁剪：是否有带 `transform` 的元素出现在 `overflow` 容器中
+- 对比异常：是否存在与页面主色调差异明显的孤立色块
+- 对齐问题：是否存在左右错位、基线不齐、组件边缘参差或栅格不一致
+
 ## 规则
 
 - 没有图片就不分析
@@ -93,8 +101,31 @@ description: For DeepSeek-V4-flash and DeepSeek-V4-pro. Use DashScope vision par
 默认使用阿里云百炼 DashScope，模型为 `qwen3.6-27b`。
 
 ```bash
-python3 skill开发/deepseek-observe/scripts/analyze_image.py \
+python3 skill开发/deepseek-observe/scripts/analyze.py \
   --image_path <图片文件路径>
+```
+
+示例：
+
+```bash
+python3 skill开发/deepseek-observe/scripts/analyze.py \
+  --image_path ./demo/screenshot.png \
+  --mode frontend-check
+```
+
+Windows 终端如果遇到 `UnicodeEncodeError: 'gbk'`，可改用：
+
+```bash
+python -X utf8 skill开发/deepseek-observe/scripts/analyze.py \
+  --image_path ./demo/screenshot.png
+```
+
+兼容旧参数：
+
+```bash
+python3 skill开发/deepseek-observe/scripts/analyze.py \
+  --image_path ./demo/screenshot.png \
+  --image_type frontend
 ```
 
 ## 自检清单

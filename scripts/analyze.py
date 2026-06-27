@@ -31,7 +31,7 @@ def validate_image(image_path):
     return True, None
 
 
-def build_prompt(image_type_hint: str) -> str:
+def build_prompt(mode: str) -> str:
     base = [
         "请先识别图片类型：截图 / 文档 / 图表 / 照片 / 其他。",
         "请提取图片中的所有文字信息。",
@@ -39,15 +39,24 @@ def build_prompt(image_type_hint: str) -> str:
         "如有表格、列表、层级结构，请整理为 Markdown。",
         "不确定的内容要明确写出不确定，不要猜。",
     ]
-    if image_type_hint == "frontend":
+    if mode == "frontend" or mode == "frontend-check":
         base += [
             "如果这是前端页面截图，请额外输出：页面类型、主要区域、布局关系、响应式风险、可访问性风险。",
             "前端补充观察只基于截图和文字证据，不要编造像素级结论。",
         ]
+    if mode == "frontend-check":
+        base += [
+            "请额外检查重复文字：同一页面是否出现两次相同的标题、名称或核心文案。",
+            "请额外检查视觉不均衡：是否存在明显的内边距/外边距比例失衡，尤其是标签、按钮、卡片标题等紧凑元素。",
+            "请额外检查潜在裁剪：是否有带 transform 的元素出现在 overflow 容器中，是否可能被裁掉。",
+            "请额外检查对比异常：是否存在与页面主色调差异明显的孤立色块、按钮或提示块。",
+            "请额外检查对齐问题：是否存在左右错位、基线不齐、组件边缘参差或栅格不一致。",
+            "请把每条检查结果单独列出，并标注证据位置或“不确定”。",
+        ]
     return "请用 Markdown 输出，按条理清晰的结构回答。\n" + "\n".join(f"- {x}" for x in base)
 
 
-def analyze_image(image_path, api_key, model=DEFAULT_MODEL, image_type_hint="general"):
+def analyze_image(image_path, api_key, model=DEFAULT_MODEL, mode="general"):
     valid, error = validate_image(image_path)
     if not valid:
         return error
@@ -64,13 +73,13 @@ def analyze_image(image_path, api_key, model=DEFAULT_MODEL, image_type_hint="gen
         "model": model,
         "input": {
             "messages": [
-                {
-                    "role": "user",
-                    "content": [
-                        {"image": f"data:image;base64,{image_data}"},
-                        {"text": build_prompt(image_type_hint)},
-                    ],
-                }
+                    {
+                        "role": "user",
+                        "content": [
+                            {"image": f"data:image;base64,{image_data}"},
+                        {"text": build_prompt(mode)},
+                        ],
+                    }
             ]
         },
     }
@@ -139,21 +148,27 @@ def analyze_image(image_path, api_key, model=DEFAULT_MODEL, image_type_hint="gen
 
 
 def main():
-    parser = argparse.ArgumentParser(description="DeepSeek Observe")
-    parser.add_argument("--image_path", "-p", required=True, help="图片文件路径")
+    parser = argparse.ArgumentParser(description="把图片转成结构化文本")
+    parser.add_argument("--image_path", "-p", required=True, help="要分析的图片路径")
     parser.add_argument(
         "--model",
         "-m",
         default=DEFAULT_MODEL,
         choices=["qwen3.6-27b"],
-        help=f"模型名称（默认: {DEFAULT_MODEL}）",
+        help=f"模型名，默认 {DEFAULT_MODEL}",
+    )
+    parser.add_argument(
+        "--mode",
+        "-t",
+        default="general",
+        choices=["general", "frontend", "frontend-check"],
+        help="分析模式",
     )
     parser.add_argument(
         "--image_type",
-        "-t",
-        default="general",
+        dest="mode",
         choices=["general", "frontend"],
-        help="图片类型提示",
+        help="旧参数兼容，和 --mode 一样",
     )
     args = parser.parse_args()
 
@@ -162,7 +177,10 @@ def main():
         print("❌ 错误: 未找到 DASHSCOPE_API_KEY 环境变量", file=sys.stderr)
         sys.exit(1)
 
-    result = analyze_image(args.image_path, api_key, args.model, args.image_type)
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+
+    result = analyze_image(args.image_path, api_key, args.model, args.mode)
     print(result)
 
 
