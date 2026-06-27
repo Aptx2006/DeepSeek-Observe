@@ -10,7 +10,9 @@ import argparse
 import base64
 import json
 import os
+import hashlib
 import sys
+from pathlib import Path
 
 import requests
 
@@ -18,6 +20,7 @@ SUPPORTED_FORMATS = (".jpg", ".jpeg", ".png", ".webp", ".bmp")
 DASHSCOPE_URL = "https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation"
 DEFAULT_MODEL = "qwen3.6-27b"
 TIMEOUT_SECONDS = 60
+CACHE_FILE = Path(__file__).with_name(".observe_cache.json")
 
 
 def validate_image(image_path):
@@ -29,6 +32,34 @@ def validate_image(image_path):
     if ext not in SUPPORTED_FORMATS:
         return False, f"❌ 不支持的图片格式: {ext}，仅支持 {', '.join(SUPPORTED_FORMATS)}"
     return True, None
+
+
+def image_cache_key(image_path, mode, model):
+    hasher = hashlib.sha256()
+    with open(image_path, "rb") as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+            hasher.update(chunk)
+    hasher.update(f"|{mode}|{model}".encode("utf-8"))
+    return hasher.hexdigest()
+
+
+def load_cache():
+    if not CACHE_FILE.exists():
+        return {}
+    try:
+        with open(CACHE_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+
+def save_cache(cache):
+    try:
+        with open(CACHE_FILE, "w", encoding="utf-8") as f:
+            json.dump(cache, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
 
 
 def build_prompt(mode: str) -> str:
@@ -60,6 +91,13 @@ def analyze_image(image_path, api_key, model=DEFAULT_MODEL, mode="general"):
     valid, error = validate_image(image_path)
     if not valid:
         return error
+
+    cache_key = image_cache_key(image_path, mode, model)
+    cache = load_cache()
+    cached = cache.get(cache_key)
+    if isinstance(cached, dict) and cached.get("markdown"):
+        print("[INFO] 命中本地缓存，直接复用上次结果", file=sys.stderr)
+        return cached["markdown"]
 
     with open(image_path, "rb") as f:
         image_data = base64.b64encode(f.read()).decode("utf-8")
@@ -127,6 +165,13 @@ def analyze_image(image_path, api_key, model=DEFAULT_MODEL, mode="general"):
                         f"总计={usage.get('total_tokens', '?')}",
                         file=sys.stderr,
                     )
+                cache[cache_key] = {
+                    "markdown": text,
+                    "image_path": image_path,
+                    "mode": mode,
+                    "model": model,
+                }
+                save_cache(cache)
                 return text
 
             return f"⚠️ 返回格式异常:\n{json.dumps(result, ensure_ascii=False, indent=2)}"

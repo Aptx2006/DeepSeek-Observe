@@ -42,6 +42,11 @@ python3 scripts/analyze.py --image_path ./demo/screenshot.png --mode frontend-ch
 
 输出会直接返回 Markdown，便于继续喂给纯文本模型。
 
+## 缓存
+
+脚本会在本地保存一份结果缓存。只要图片内容、模式和模型没变，第二次运行会直接复用上次的 Markdown。
+缓存文件位于 `scripts/.observe_cache.json`。
+
 ## 参数说明
 
 - `--image_path`, `-p`：图片文件路径

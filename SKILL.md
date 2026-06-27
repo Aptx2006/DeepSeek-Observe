@@ -100,6 +100,8 @@ description: 为纯文本模型提供视觉能力、多模态能力。用 DashSc
 
 默认使用阿里云百炼 DashScope，模型为 `qwen3.6-27b`。
 
+脚本会按图片内容、模式和模型做本地缓存，重复分析同一张图时会直接复用上次的 Markdown。
+
 ```bash
 python3 skill开发/deepseek-observe/scripts/analyze.py \
   --image_path <图片文件路径>
